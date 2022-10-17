@@ -1,8 +1,18 @@
 using System.Text;
 
-public class UnpackUtility
+public class PackUtility
 {
-    // Way1
+    // 封包
+    public static byte[] Pack(byte[] bytes)
+    {
+        var buf = new List<byte>() { };
+        buf.AddRange(Encoding.ASCII.GetBytes(Protocol.Header));
+        buf.AddRange(BitConverter.GetBytes(bytes.Length));
+        buf.AddRange(bytes);
+        return buf.ToArray();
+    }
+
+    // 用Slice方式解包
     public static List<byte> UnpackWithSlice(List<byte> packList, Action<byte[]> legitPackCallback = null)
     {
         byte[] buf = packList.ToArray();
@@ -39,7 +49,7 @@ public class UnpackUtility
         return (i == len) ? new List<byte>() : new List<byte>(buf[^i]);
     }
 
-    // Way2
+    // 用Segment方式解包
     public static List<byte> UnpackWithSegment(List<byte> packList, Action<byte[]> legitPackCallback = null)
     {
         int len = packList.Count();
@@ -51,7 +61,7 @@ public class UnpackUtility
             if (len < i + Protocol.HeaderLen + Protocol.DataByteLen)
                 break;
 
-            // 將封包轉Slice處理
+            // 將封包轉Segment處理
             var seg = new ArraySegment<byte>(packList.ToArray());
             byte[] headerBytes = seg.Slice(i, Protocol.HeaderLen).ToArray();
             if (Encoding.Unicode.GetString(headerBytes) == Protocol.Header)
